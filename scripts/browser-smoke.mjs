@@ -54,7 +54,7 @@ try {
     throw new Error('Fehlt: '+selector);
   };
   const navigate=async(path,selector)=>{await c('Page.navigate',{url:origin+'/'+path});await wait(selector);};
-  const documentFrame=()=>evaluate('document.fonts.ready.then(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve(true))))');
+  const documentFrame=()=>evaluate('document.fonts.ready.then(()=>new Promise(resolve=>requestAnimationFrame(resolve))).then(()=>Promise.allSettled(document.getAnimations().map(animation=>animation.finished)))');
   await c('Page.enable');await c('Runtime.enable');
   await c('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await navigate('','#topics-search');
@@ -62,9 +62,10 @@ try {
     await evaluate("document.fonts.ready.then(()=>true)");
     await writeFile(output+'-desktop.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
   }
-  await evaluate("document.querySelector('[data-topic-jump=statistik]').click()");
-  assert.equal(await evaluate("document.activeElement.closest('[data-topic]').id"),'thema-statistik');
+  await evaluate("document.querySelector('#thema-statistik summary').click()");
   assert.equal(await evaluate("document.querySelector('#thema-statistik').open"),true);
+  await evaluate("(()=>{const x=document.querySelector('#preview-z');x.value=0;x.dispatchEvent(new Event('input'))})()");
+  assert.match(await evaluate("document.querySelector('#preview-value').value"),/^50\s%$/);
   assert.equal(await evaluate("document.querySelectorAll('[data-topic]').length"),10);
   await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='tukey';s.dispatchEvent(new Event('input'))})()");
   assert.match(await evaluate("document.querySelector('#topic-matches').innerText"),/passende Lektion/);
@@ -73,20 +74,20 @@ try {
   await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='xyz-ohne-treffer';s.dispatchEvent(new Event('input'))})()");
   assert.match(await evaluate("document.querySelector('#topic-matches').innerText"),/Keine Lektionen gefunden/);
   await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='';s.dispatchEvent(new Event('input'))})()");
-  await evaluate("document.querySelector('.resume a').click()");
+  await evaluate("document.querySelector('.hero .primary').click()");
   await wait('#quiz');
   await evaluate("document.querySelector('#quiz input[value=\"1\"]').click(); document.querySelector('#quiz button').click()");
   assert.match(await evaluate("document.querySelector('#quiz-feedback').innerText"),/^Richtig/);
   await evaluate("location.hash='/'");
-  await wait('.resume');
-  assert.match(await evaluate("document.querySelector('.resume').innerText"),/Zuletzt geöffnet/);
-  await evaluate("document.querySelector('.resume a').click()");
+  await wait('.resume-label');
+  assert.match(await evaluate("document.querySelector('.resume-label').innerText"),/Zuletzt geöffnet/);
+  await evaluate("document.querySelector('.hero .primary').click()");
   await wait('#done');
   await evaluate("document.querySelector('#done').click(); location.hash='/'");
   await wait('#topics-search');
   await c('Page.reload');
-  await wait('.index-progress');
-  assert.match(await evaluate("document.querySelector('.index-progress').innerText"),/^1 von /);
+  await wait('.learning-progress');
+  assert.match(await evaluate("document.querySelector('.learning-progress').innerText"),/^1 von /);
 
   await navigate('#/lektion/sigmoid','#lab-0');
   assert.equal(await evaluate("document.querySelectorAll('#lesson-explanations details[open]').length"),1);
@@ -144,9 +145,10 @@ try {
   await navigate('#/labor/knn','#lab-0');
   await evaluate("document.querySelector('.theme').click();document.querySelector('[data-theme-choice=dark]').click()");
   assert.equal(await evaluate("document.documentElement.dataset.theme"),'dark');
+  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()"),'#141416');
   assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true);
   if(output){
-    await evaluate("document.querySelector('main').focus()");
+    await evaluate("document.querySelector('main').focus({preventScroll:true}); window.scrollTo(0,0)");
     await documentFrame();
     await writeFile(output+'-handy.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
   }

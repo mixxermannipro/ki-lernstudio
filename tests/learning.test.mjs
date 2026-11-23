@@ -92,7 +92,7 @@ test('Die statische Startseite verweist auf vorhandene Dateien', async () => {
   const index=await readFile('public/index.html','utf8');
   assert.match(index,/<html lang="de">/);
   for(const path of index.matchAll(/(?:href|src)="\/([^"]+)"/g)) {
-    assert.ok((await readFile('public/'+path[1])).length,path[1]);
+    assert.ok((await readFile('public/'+path[1].split('?')[0])).length,path[1]);
   }
   const headers=await readFile('public/_headers','utf8');
   assert.match(headers,/script-src 'self'/);
