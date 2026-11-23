@@ -58,6 +58,9 @@ try {
   await c('Page.enable');await c('Runtime.enable');
   await c('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await navigate('','#topics-search');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'static');
+  assert.equal(await evaluate("document.querySelector('.tab-dock').getBoundingClientRect().top < 60"),true);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock svg')).display"),'none');
   if(output){
     await evaluate("document.fonts.ready.then(()=>true)");
     await writeFile(output+'-desktop.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
@@ -140,13 +143,23 @@ try {
   await evaluate("(()=>{const s=document.querySelector('#search');s.value='overfitting';s.dispatchEvent(new Event('input'))})()");
   assert.equal(await evaluate("document.querySelector('#matches').innerText"),'1 Eintrag');
 
+  await c('Emulation.setDeviceMetricsOverride',{width:721,height:812,deviceScaleFactor:1,mobile:false});
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'static');
+  const tablet=await evaluate("({width:innerWidth,navLeft:document.querySelector('.tab-dock').getBoundingClientRect().left,navRight:document.querySelector('.tab-dock').getBoundingClientRect().right,brand:document.querySelector('.brand').getBoundingClientRect().right,theme:document.querySelector('.theme-picker').getBoundingClientRect().left})");
+  assert.ok(tablet.navLeft > tablet.brand && tablet.navRight < tablet.theme,JSON.stringify(tablet));
+  await c('Emulation.setDeviceMetricsOverride',{width:720,height:812,deviceScaleFactor:1,mobile:true});
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'fixed');
   await c('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await c('Emulation.setTouchEmulationEnabled',{enabled:true});
   await navigate('#/labor/knn','#lab-0');
   await evaluate("document.querySelector('.theme').click();document.querySelector('[data-theme-choice=dark]').click()");
   assert.equal(await evaluate("document.documentElement.dataset.theme"),'dark');
-  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()"),'#141416');
+  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()"),'#000');
   assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true);
+  assert.equal(await evaluate("getComputedStyle(document.body).backgroundColor"),'rgb(0, 0, 0)');
+  assert.equal(await evaluate("document.querySelector('.tab-dock [aria-current]').dataset.nav"),'labor');
+  const dock="document.querySelector('.tab-dock').getBoundingClientRect()";
+  assert.equal(await evaluate(dock+".bottom <= innerHeight && "+dock+".top > innerHeight - 100"),true);
   if(output){
     await evaluate("document.querySelector('main').focus({preventScroll:true}); window.scrollTo(0,0)");
     await documentFrame();
@@ -156,6 +169,8 @@ try {
     await navigate(route,'main h1');
     assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true,route);
   }
+  await evaluate("window.scrollTo(0,document.documentElement.scrollHeight)");
+  assert.equal(await evaluate("document.querySelector('footer').getBoundingClientRect().bottom < document.querySelector('.tab-dock').getBoundingClientRect().top"),true);
   assert.equal(await evaluate("document.querySelector('footer a[href*=github]').href"),'https://github.com/mixxermannipro/ki-lernstudio');
   assert.equal(await evaluate("document.querySelector('main a[href*=CONTRIBUTING]').pathname"),'/mixxermannipro/ki-lernstudio/blob/main/CONTRIBUTING.md');
   await c('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});

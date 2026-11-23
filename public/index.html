@@ -2,20 +2,24 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7f9">
   <meta name="description" content="Interaktive Lernapp für künstliche Intelligenz und maschinelles Lernen.">
   <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml">
-  <link rel="stylesheet" href="/style.css?v=4">
+  <link rel="stylesheet" href="/style.css?v=5">
   <title>KI-Lernstudio</title>
-  <script type="module" src="/app.mjs?v=4"></script>
+  <script type="module" src="/app.mjs?v=5"></script>
 </head>
 <body>
   <a class="skip" href="#content">Zum Inhalt springen</a>
   <header class="header"><div class="header-inner">
     <a class="brand" href="#/"><span class="mark" aria-hidden="true"><img src="/favicon.svg?v=4" alt="" width="32" height="32"></span> KI-Lernstudio</a>
-    <nav aria-label="Hauptnavigation">
-      <a href="#/" data-nav="home">Themen</a><a href="#/labor" data-nav="labor">Labor</a><a href="#/formeln" data-nav="formeln">Formeln</a><a href="#/glossar" data-nav="glossar">Glossar</a><a href="#/pruefung" data-nav="pruefung">Prüfung</a>
+    <nav class="tab-dock" aria-label="Hauptnavigation">
+      <a href="#/" data-nav="home"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v14H4zM4 9.5h16M9 9.5v10"/></svg><span>Themen</span></a>
+      <a href="#/labor" data-nav="labor"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6m-5 0v6l-5.4 8.2A2.5 2.5 0 0 0 6.7 21h10.6a2.5 2.5 0 0 0 2.1-3.8L14 9V3M7.5 14h9"/></svg><span>Labor</span></a>
+      <a href="#/formeln" data-nav="formeln"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8l-5 7 5 7H4m12-10h5m-5 5h5"/></svg><span>Formeln</span></a>
+      <a href="#/glossar" data-nav="glossar"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v14M12 6C9 4.5 5.7 4.3 3 5v13c3-.7 6-.3 9 2 3-2.3 6-2.7 9-2V5c-2.7-.7-6-.5-9 1Z"/></svg><span>Glossar</span></a>
+      <a href="#/pruefung" data-nav="pruefung"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2m-8-2h8v4H8zm.5 10 2.5 2.5 4.5-4.5"/></svg><span>Prüfung</span></a>
     </nav>
     <details class="theme-picker">
       <summary class="theme" aria-label="Darstellung wählen"><span class="theme-preview">Darstellung</span></summary>
@@ -25,7 +29,8 @@
         <button type="button" data-theme-choice="dark">Dunkel</button>
       </div>
     </details>
-  </div></header>
+  </div>
+  </header>
   <main id="content" tabindex="-1"></main>
   <footer><span>KI-Lernstudio · Kursbegleitende Lernhilfe</span><div class="footer-links"><a href="#/mitmachen">Mitmachen</a><a href="https://github.com/mixxermannipro/ki-lernstudio">Repository auf GitHub</a></div></footer>
   <noscript>Bitte aktiviere JavaScript, um die Übungen und Diagramme zu verwenden.</noscript>
