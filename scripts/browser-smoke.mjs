@@ -6,11 +6,23 @@ import assert from 'node:assert/strict';
 const origin=process.argv[2]??'http://127.0.0.1:8267';
 const output=process.argv[3];
 const profile=await mkdtemp(tmpdir()+'/ki-browser-');
-const browser=spawn(process.env.CHROME_BIN ?? 'google-chrome',['--no-sandbox','--disable-gpu','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank']);
+const browser=spawn(process.env.CHROME_BIN ?? 'google-chrome',['--headless','--no-sandbox','--disable-gpu','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank']);
 const url=await new Promise((resolve,reject)=>{
-  browser.stderr.on('data',chunk=>{const match=chunk.toString().match(/DevTools listening on (ws:\/\/\S+)/);if(match)resolve(match[1]);});
-  browser.once('error',reject);
-  browser.once('exit',code=>reject(new Error('Chromium exit '+code)));
+  let stderr='';
+  const expiry=setTimeout(()=>{
+    browser.kill();
+    reject(new Error('Chromium wurde nicht rechtzeitig gestartet.\n'+stderr));
+  },15000);
+  browser.stderr.on('data',chunk=>{
+    stderr=(stderr+chunk).slice(-4000);
+    const match=stderr.match(/DevTools listening on (ws:\/\/\S+)/);
+    if(match){clearTimeout(expiry);resolve(match[1]);}
+  });
+  browser.once('error',error=>{clearTimeout(expiry);reject(error);});
+  browser.once('exit',code=>{
+    clearTimeout(expiry);
+    reject(new Error('Chromium exit '+code+'\n'+stderr));
+  });
 });
 const ws=new WebSocket(url);
 await new Promise(resolve=>ws.addEventListener('open',resolve,{once:true}));
