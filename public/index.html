@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f6fa">
+  <meta name="theme-color" content="#f4f5ee">
   <meta name="description" content="Interaktive Lernapp für künstliche Intelligenz und maschinelles Lernen.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
@@ -17,10 +17,17 @@
     <nav aria-label="Hauptnavigation">
       <a href="#/" data-nav="home">Themen</a><a href="#/labor" data-nav="labor">Labor</a><a href="#/formeln" data-nav="formeln">Formeln</a><a href="#/glossar" data-nav="glossar">Glossar</a><a href="#/pruefung" data-nav="pruefung">Prüfung</a>
     </nav>
-    <button class="theme" type="button" aria-label="Farbschema wählen" title="Farbschema wechseln"></button>
+    <details class="theme-picker">
+      <summary class="theme" aria-label="Darstellung wählen"><span class="theme-preview">Darstellung</span></summary>
+      <div class="theme-menu" aria-label="Darstellung">
+        <button type="button" data-theme-choice="system">Wie System</button>
+        <button type="button" data-theme-choice="light">Hell</button>
+        <button type="button" data-theme-choice="dark">Dunkel</button>
+      </div>
+    </details>
   </div></header>
   <main id="content" tabindex="-1"></main>
-  <footer><span>KI-Lernstudio · Kursbegleitende Lernhilfe</span><a href="#/mitmachen">Mitmachen</a></footer>
+  <footer><span>KI-Lernstudio · Kursbegleitende Lernhilfe</span><div class="footer-links"><a href="#/mitmachen">Mitmachen</a><a href="https://github.com/mixxermannipro/ki-lernstudio">Repository auf GitHub</a></div></footer>
   <noscript>Bitte aktiviere JavaScript, um die Übungen und Diagramme zu verwenden.</noscript>
 </body>
 </html>
