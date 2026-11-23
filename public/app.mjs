@@ -1,5 +1,7 @@
 import { modules } from './lessons.mjs';
 import { labs } from './labs.mjs';
+import { chart } from './charts.mjs';
+import { fmt } from './math.mjs';
 import { formulas, glossary } from './reference.mjs';
 import { examCases, examTopics } from './exam-content.mjs';
 import { bindCase, bindLab, casePage, chevron, disclosure, examPage, feedback, labWorkspace, link } from './study-ui.mjs';
@@ -29,7 +31,7 @@ const titles = {home:'Themen',pruefung:'Prüfungstraining',labor:'Rechenlabor',f
 function theme() {
   const dark=state.theme==='dark'||state.theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.dataset.theme=dark?'dark':'light';
-  document.querySelector('[name="theme-color"]').content=dark?'#17211e':'#f4f5ee';
+  document.querySelector('[name="theme-color"]').content=dark?'#141416':'#f7f7f9';
   const icons={
     system:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
@@ -58,8 +60,6 @@ themePicker.addEventListener('keydown',event=>{
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme);
 
-const chapterNames=['KI-Grundlagen','Daten','Statistik','Regression','Modellbewertung','Entscheidungsbäume','kNN & Skalierung','Prozesse & Projekte','Recht & Steuern','Lernmethoden'];
-const chapterNumber=index=>String(index+1).padStart(2,'0');
 let directoryQuery='';
 const topicState=new Map();
 
@@ -67,23 +67,23 @@ function home() {
   const count=lessons.filter(lesson=>status(lesson.id)).length;
   const recent=lessonById.get(state.last);
   const next=recent&&!status(recent.id)?recent:lessons.find(lesson=>!status(lesson.id))??lessons[0];
-  const caption=recent===next?'Zuletzt geöffnet':count===lessons.length?'Zum Wiederholen':'Nächste Lektion';
-  return '<div class="desk"><aside class="chapter-index" aria-labelledby="chapter-title"><h2 id="chapter-title">Inhalt</h2><ol>'+
-    modules.map((module,i)=>'<li><button type="button" data-topic-jump="'+module.id+'"><span>'+chapterNumber(i)+'</span>'+chapterNames[i]+'</button></li>').join('')+
-    '</ol><div class="index-progress"><span>'+count+' von '+lessons.length+' Lektionen abgeschlossen</span><progress value="'+count+'" max="'+lessons.length+'">'+count+'</progress></div></aside>'+
-    '<div class="desk-page"><section class="desk-intro"><h1>Dein Arbeitsheft.</h1><p>Künstliche Intelligenz und maschinelles Lernen für die Weiterbildung. Steig bei einem Thema ein oder rechne einen Prüfungsfall.</p></section>'+
-    '<section class="resume" aria-label="Lernstand"><div><p>'+caption+'</p><h2>'+next.title+'</h2></div>'+
-    link('lektion/'+next.id,recent===next?'Weiterlesen':count===0?'Lektion starten':'Lektion öffnen','primary')+'</section>'+
-    '<section class="learning" id="themen" tabindex="-1"><div class="section-title"><div><h2>Themen</h2><p class="mobile-progress">'+count+' von '+lessons.length+' Lektionen abgeschlossen</p></div>'+link('pruefung','Prüfungsfälle','back')+'</div>'+
+  const resume=recent===next?'Weiterlesen':count===0?'Lernpfad starten':'Lektion öffnen';
+  return '<section class="hero"><div class="hero-copy"><h1>KI verstehen.<br>Selbst rechnen.</h1><p>Entdecke die Themen deiner Weiterbildung, rechne mit eigenen Zahlen und übe für die Prüfung.</p>'+
+    '<div class="actions">'+link('lektion/'+next.id,resume,'primary')+link('pruefung','Prüfungstraining','secondary')+'</div>'+
+    (recent?'<p class="resume-label">'+(recent===next?'Zuletzt geöffnet':'Nächste Lektion')+' · '+next.title+'</p>':'')+'</div>'+
+    '<figure class="hero-demo" aria-labelledby="preview-title"><div class="demo-top"><figcaption id="preview-title">Sigmoid</figcaption><output id="preview-value" for="preview-z"></output></div>'+
+    '<div id="preview-chart"></div><label class="range-label" for="preview-z"><span>Rohwert z</span><output id="preview-z-value" for="preview-z"></output></label>'+
+    '<input id="preview-z" type="range" min="-6" max="6" step="0.05" value="0.35"></figure></section>'+
+    '<section class="learning" id="themen" tabindex="-1"><div class="section-title"><h2>Themen</h2><div class="learning-progress"><span>'+count+' von '+lessons.length+' Lektionen abgeschlossen</span><progress value="'+count+'" max="'+lessons.length+'">'+count+'</progress></div></div>'+
     '<div class="directory-tools"><label class="search-label" for="topics-search">Im Lernstoff suchen</label><input type="search" class="search" id="topics-search" placeholder="Gini, Skalierung, Verträge …"></div>'+
     '<p id="topic-matches" class="matches" role="status" hidden></p>'+
-    '<div class="module-list">'+modules.map((module,i)=>{
+    '<div class="module-list">'+modules.map(module=>{
       const completed=module.lessons.filter(lesson=>status(lesson.id)).length;
       return '<details id="thema-'+module.id+'" class="module" data-topic '+((topicState.get(module.id)??module.id===next.module.id)?'open':'')+'>'+
-        '<summary><span class="chapter-number" aria-hidden="true">'+chapterNumber(i)+'</span><span class="module-main"><strong>'+module.title+'</strong><span>'+module.summary+'</span></span>'+
+        '<summary><span class="module-main"><strong>'+module.title+'</strong><span>'+module.summary+'</span></span>'+
         '<span class="module-count">'+(completed?completed+'/'+module.lessons.length+' erledigt':module.lessons.length+' Lektionen')+'</span>'+chevron+'</summary>'+
         '<ul>'+module.lessons.map(lesson=>'<li data-lesson="'+lesson.id+'">'+link('lektion/'+lesson.id,lesson.title)+(status(lesson.id)?'<span>Erledigt</span>':lesson.lab?'<span>Mit Labor</span>':'')+'</li>').join('')+'</ul></details>';
-    }).join('')+'</div></section></div></div>';
+    }).join('')+'</div></section>';
 }
 
 function lessonPage(lesson) {
@@ -177,21 +177,30 @@ function bindTopicSearch() {
     if(filtering)return;
     topicState.set(topic.id,!node.open);
   });
-  root.querySelectorAll('[data-topic-jump]').forEach(button=>button.addEventListener('click',()=>{
-    search.value='';
-    filter();
-    const topic=document.getElementById('thema-'+button.dataset.topicJump);
-    topic.open=true;
-    topicState.set(button.dataset.topicJump,true);
-    focusSection(topic.querySelector('summary'));
-  }));
+
 }
 
 function wire(type,lesson,key,examCase) {
   document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener('click',()=>{
     focusSection(document.getElementById(button.dataset.jump));
   }));
-  if(type==='home')bindTopicSearch();
+  if(type==='home'){
+    bindTopicSearch();
+    const slider=document.querySelector('#preview-z');
+    const graph=document.querySelector('#preview-chart');
+    const score=document.querySelector('#preview-value');
+    const input=document.querySelector('#preview-z-value');
+    const percent=new Intl.NumberFormat('de-DE',{style:'percent',maximumFractionDigits:2});
+    function updatePreview() {
+      const z=Number(slider.value);
+      const preview=labs.sigmoid.run([z,50]).plot;
+      input.value=fmt(z);
+      score.value=percent.format(preview.p);
+      graph.innerHTML=chart(preview);
+    }
+    slider.addEventListener('input',updatePreview);
+    updatePreview();
+  }
   if(type==='lektion') {
     if(state.last!==lesson.id){state.last=lesson.id;save();}
     const form=document.querySelector('#quiz'), done=document.querySelector('#done');
@@ -256,8 +265,11 @@ function render(moveFocus=false) {
     '<section class="reading"><h1>Seite nicht gefunden</h1>'+link('','Zum Lernpfad','primary')+'</section>';
   const labSelectFocused=document.activeElement?.id==='lab-select';
   root.innerHTML=body;
-  if(moveFocus&&typeof root.animate==='function'&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
-    root.animate([{opacity:.75,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:210,easing:'cubic-bezier(.16,1,.3,1)'});
+  if(moveFocus&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&typeof root.animate==='function'){
+    root.getAnimations().forEach(animation=>animation.cancel());
+    root.animate([{opacity:.76,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],
+      {duration:320,easing:'cubic-bezier(.22,1,.36,1)'});
+  }
   document.title=type==='home'?'KI-Lernstudio':(lesson?.title??examCase?.title??titles[type]??'Seite nicht gefunden')+' · KI-Lernstudio';
   document.querySelectorAll('[data-nav]').forEach(nav=>{
     const active=nav.dataset.nav===(type==='lektion'?'home':type==='fall'?'pruefung':type);

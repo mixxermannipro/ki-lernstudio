@@ -1,9 +1,7 @@
 # Gestaltung des KI-Lernstudios
 
-Das Lernstudio ist als digitales Arbeitsheft aufgebaut. Die Startseite zeigt am Desktop ein festes Inhaltsverzeichnis neben dem Lernstoff. Am Handy haben der Wiedereinstieg in eine Lektion und die Suche Vorrang. Kapitelnummern dienen der Orientierung in der Themenfolge.
+Die Oberfläche folgt der kompakten Lernansicht des ersten Themenstands. Helle Flächen bleiben weiß oder neutralgrau. Der Dunkelmodus nutzt Graphittöne. Blau kennzeichnet aktive Bedienelemente und ausgewählte Diagrammwerte. Eine Systemschrift sorgt für vertraute Formen.
 
-Literata prägt Überschriften und markierte Ergebnisse. Eine Systemschrift bleibt für Aufgaben, Navigation und Eingaben zuständig. Tannengrün verbindet Inhaltsverzeichnis und Bedienelemente. Ein warmer Rotton hebt ausgewählte Punkte und Ergebnisse in Diagrammen hervor. Die Navigation liegt auf einer leicht durchscheinenden Fläche. Lesetexte und interaktive Inhalte liegen auf deckenden Flächen mit sparsamen Trennlinien.
+Die Startseite verbindet den Wiedereinstieg mit einer interaktiven Sigmoid-Kurve. Darunter stehen Themensuche und Lektionen. Die schwebende Navigation bleibt dezent durchscheinend. Formeln, Prüfungsfälle und Eingabeflächen bleiben ruhig und gut lesbar.
 
-Im Labor lassen sich Werte ziehen oder eingeben. Kontext, Diagramm und Bedienelemente stehen zusammen. Aufklappbare Rechenschritte verwenden nach Möglichkeit den Namen der Operation. Die Prüfungsseite zeigt zuerst die bearbeitbaren Fälle und daneben den Quellenbezug. Fokusmarkierungen, Hell- und Dunkelmodus und reduzierte Bewegung gehören zu allen Ansichten.
-
-Die lokal eingebundene Schrift liegt in `public/fonts/`. Ihre SIL Open Font License ist dort mit abgelegt.
+Seitenwechsel gehen mit kurzer Bewegung und einer weichen Abbremsung einher. Themen und Rechenschritte öffnen sich ohne abrupten Größenwechsel, wenn der Browser die Technik unterstützt. Bei reduzierter Bewegung wechselt die Ansicht direkt. Laborwerte lassen sich weiterhin ziehen oder eintippen. GitHub und Beitragsanleitung bleiben erreichbar.
