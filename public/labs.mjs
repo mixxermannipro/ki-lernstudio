@@ -1,9 +1,12 @@
 import { distribution, entropy, fmt, gini, mean, metrics, pct, ratio, sigmoid } from './math.mjs';
 
+import { advancedLabs } from './advanced-labs.mjs';
+
 const input = (label, min, max, value, step = 1) => ({ label, min, max, value, step });
 const bars = (labels, values, color) => ({ kind:'bars', labels, values, color });
 
 export const labs = {
+  ...advancedLabs,
   sigmoid: {
     title:'Die S-Kurve', formula:'p = 1 / (1 + e⁻ᶻ)', question:'Wie verändert ein höherer Rohwert die Wahrscheinlichkeit?',
     inputs:[input('Rohwert z', -6, 6, 0.35, 0.05), input('Entscheidungsschwelle (%)', 5, 95, 50, 5)],

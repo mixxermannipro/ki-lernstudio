@@ -34,6 +34,36 @@ export function chart(data) {
       data.points.map((p,i)=>circle(x(p.px),y(p.py),i<data.k?8:5,p.c==='A'?'point class-a':'point class-b')+
         text(x(p.px),y(p.py)-13,p.c)).join('')+circle(x(data.x),y(data.y),8,'point current'),'Punktwolke. Linien verbinden den Testpunkt mit den '+data.k+' nächsten Nachbarn.');
   }
+  if(data.kind === 'paired') {
+    const x=v=>xPlot(v,0,6), y=v=>182-(v+5)/15*147;
+    return frame(rows([-5,0,5,10],y)+[1,2,3,4,5].map(v=>text(x(v),208,v)).join('')+
+      data.samples.map(([a,b],i)=>circle(x(a),y(b),7,'point '+(i===4?'current':'class-a'))).join(''),
+      'Streudiagramm aus fünf Wertepaaren. Der letzte y-Wert ist '+fmt(data.samples.at(-1)[1])+'.');
+  }
+  if(data.kind === 'boundary') {
+    const {a,b,c,x,y}=data;
+    const px=v=>xPlot(v,-4,4), py=v=>106-v*18;
+    const intersections=[];
+    const add=(u,v)=>{if(Math.abs(u)<=4&&Math.abs(v)<=4&&!intersections.some(([x,y])=>x===u&&y===v))intersections.push([u,v]);};
+    if(b!==0)for(const edge of [-4,4])add(edge,(-a*edge-c)/b);
+    if(a!==0)for(const edge of [-4,4])add((-b*edge-c)/a,edge);
+    const grid=rows([-4,-2,0,2,4],py)+line(px(0),34,px(0),178)+[-4,-2,0,2,4].map(v=>text(px(v),207,v)).join('');
+    const boundary=intersections.length>1?path(intersections.map(([u,v])=>[px(u),py(v)])):'';
+    const norm2=a*a+b*b;
+    const distance=(a*x+b*y+c)/norm2;
+    const foot=[x-a*distance,y-b*distance];
+    const projection=norm2&&foot.every(v=>Math.abs(v)<=4)?line(px(x),py(y),px(foot[0]),py(foot[1]),'guide'):'';
+    return frame(grid+boundary+projection+circle(px(x),py(y),7,'point current'),'Markierter Punkt bei '+fmt(x)+' und '+fmt(y)+'.');
+  }
+  if(data.kind === 'scores') {
+    const x=v=>xPlot(v,0,100), y=v=>v?74:140;
+    return frame(line(46,y(1),494,y(1),'gridline')+line(46,y(0),494,y(0),'gridline')+
+      line(x(data.limit),33,x(data.limit),176,'guide')+text(x(data.limit),24,'Schwelle')+
+      text(43,y(1)+4,'Defekt','end')+text(43,y(0)+4,'Intakt','end')+
+      [0,25,50,75,100].map(v=>text(x(v),205,v+' %')).join('')+
+      data.cases.map(item=>circle(x(item.score),y(item.actual),7,'point '+(item.actual===item.predicted?'class-a':'current'))).join(''),
+      'Scores für intakte und defekte Teile. Die Schwelle liegt bei '+data.limit+' Prozent.');
+  }
   if(data.kind === 'box') {
     const x = v=>xPlot(v,Math.min(0,data.fences[0]),Math.max(data.fences[1],data.xs.at(-1))+1), ticks=[...new Set([...data.fences,...data.whiskers,data.q2])];
     return frame(line(46,166,494,166)+ticks.map(v=>line(x(v),162,x(v),171)+text(x(v),192,fmt(v))).join('')+
@@ -42,6 +72,18 @@ export function chart(data) {
       '<rect class="box" x="'+x(data.q1)+'" y="64" width="'+(x(data.q3)-x(data.q1))+'" height="60"/>'+
       line(x(data.q2),65,x(data.q2),124,'curve')+data.outliers.map(v=>circle(x(v),94,7,'point current')).join(''),
       'Boxplot. Median '+fmt(data.q2)+', Quartile '+fmt(data.q1)+' und '+fmt(data.q3)+'.');
+  }
+  if(data.kind === 'history') {
+    const x=i=>xPlot(i,0,data.values.length-1),y=v=>190-v*220;
+    const points=data.values.map((value,i)=>[x(i),y(value)]);
+    return frame(rows([0,.2,.4,.6],y)+path(points)+circle(...points.at(-1),7,'point current')+
+      text(x(0),212,'Start')+text(x(points.length-1),212,'Update '+(points.length-1)),
+      'Trainingsverlust vom Startwert '+fmt(data.values[0])+' bis '+fmt(data.values.at(-1))+'.');
+  }
+  if(data.kind === 'multiclass') {
+    return '<table class="matrix"><caption>Iris: Zeile tatsächlich, Spalte vorhergesagt</caption><thead><tr><th scope="col">Art</th>'+
+      data.labels.map(label=>'<th scope="col">'+label+'</th>').join('')+'</tr></thead><tbody>'+
+      data.values.map((row,i)=>'<tr><th scope="row">'+data.labels[i]+'</th>'+row.map((value,j)=>'<td'+(i===j?' class="hit"':'')+'>'+value+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
   }
   if(data.kind === 'matrix') {
     return '<table class="matrix"><caption>Binäre Confusion Matrix</caption><thead><tr><th scope="col">Tatsächlich</th><th scope="col">Positiv vorhergesagt</th><th scope="col">Negativ vorhergesagt</th></tr></thead><tbody>'+

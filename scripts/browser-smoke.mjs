@@ -67,6 +67,16 @@ try {
     await writeFile(output+'-desktop.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
   }
   await evaluate("document.querySelector('.hero .primary').click()");
+  assert.equal(await evaluate("document.activeElement.id"),'themen');
+  assert.equal(await evaluate("document.querySelectorAll('[data-topic]').length"),10);
+  await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='tukey';s.dispatchEvent(new Event('input'))})()");
+  assert.match(await evaluate("document.querySelector('#topic-matches').innerText"),/passende Lektion/);
+  assert.equal(await evaluate("document.querySelector('[data-lesson=boxplot]').hidden"),false);
+  assert.equal(await evaluate("document.querySelector('[data-lesson=landkarte]').hidden"),true);
+  await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='xyz-ohne-treffer';s.dispatchEvent(new Event('input'))})()");
+  assert.match(await evaluate("document.querySelector('#topic-matches').innerText"),/Keine passenden/);
+  await evaluate("(()=>{const s=document.querySelector('#topics-search');s.value='';s.dispatchEvent(new Event('input'))})()");
+  await evaluate("document.querySelector('.directory-tools a').click()");
   await wait('#quiz');
   await evaluate("document.querySelector('#quiz input[value=\"1\"]').click(); document.querySelector('#quiz button').click()");
   assert.match(await evaluate("document.querySelector('#quiz-feedback').innerText"),/^Richtig/);
@@ -75,6 +85,35 @@ try {
   await c('Page.reload');
   await wait('.progress-summary');
   assert.match(await evaluate("document.querySelector('.progress-summary').innerText"),/^1 von /);
+
+  await navigate('#/lektion/sigmoid','#lab-0');
+  assert.equal(await evaluate("document.querySelectorAll('#lesson-explanations details[open]').length"),1);
+  await evaluate("document.querySelector('#toggle-explanations').click()");
+  assert.equal(await evaluate("document.querySelectorAll('#lesson-explanations details:not([open])').length"),0);
+  await evaluate("document.querySelector('#toggle-explanations').click()");
+  assert.equal(await evaluate("document.querySelectorAll('#lesson-explanations details[open]').length"),0);
+  await evaluate("(()=>{document.querySelector('#calculation li:nth-child(2) summary').click();const input=document.querySelector('#lab-0');input.value='0';input.dispatchEvent(new Event('input'))})()");
+  assert.equal(await evaluate("document.querySelector('#calculation li:nth-child(2) details').open"),true);
+  assert.equal(await evaluate("document.querySelector('#result').value"),'50 %');
+
+  await navigate('#/labor/datenwerte','#lab-0');
+  await evaluate("(()=>{const input=document.querySelector('#lab-0');input.value='-2; 0; 2,5';input.dispatchEvent(new Event('input'))})()");
+  assert.match(await evaluate("document.querySelector('#result').value"),/0,1667/);
+  await evaluate("document.querySelector('#lab-0').value='kein Wert';document.querySelector('#lab-0').dispatchEvent(new Event('input'))");
+  assert.equal(await evaluate("document.querySelector('#result').value"),'Eingabe prüfen');
+  await evaluate("document.querySelector('#reset').click()");
+  assert.match(await evaluate("document.querySelector('#result').value"),/Mittelwert 7/);
+
+  await navigate('#/pruefung','.case-list');
+  assert.equal(await evaluate("document.querySelectorAll('.case-list li').length"),8);
+  await evaluate("document.querySelector('.case-list li a').click()");
+  await wait('#case-form');
+  await evaluate("document.querySelector('#task-0').value='5';document.querySelector('#task-1').value='60 %';document.querySelector('#task-2').value='70';document.querySelector('#case-form button').click()");
+  assert.match(await evaluate("document.querySelector('#case-feedback').innerText"),/^2 von 4/);
+  await evaluate("document.querySelector('#task-2').value='75';document.querySelector('#task-3').value='85';document.querySelector('#case-form button').click()");
+  assert.match(await evaluate("document.querySelector('#case-feedback').innerText"),/^4 von 4/);
+  await evaluate("document.querySelector('.case-questions details summary').click()");
+  assert.equal(await evaluate("document.querySelector('.case-questions details').open"),true);
 
   await navigate('#/labor/gini','#lab-0');
   assert.match(await evaluate("document.querySelector('#result').innerText"),/0,2133/);
@@ -101,10 +140,13 @@ try {
     await new Promise(resolve=>setTimeout(resolve,400));
     await writeFile(output+'-handy.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
   }
-  for(const route of ['#/','#/labor/matrix','#/labor/boxplot','#/formeln','#/glossar','#/lektion/sigmoid','#/mitmachen']) {
+  for(const route of ['#/','#/labor/matrix','#/labor/boxplot','#/labor/iris','#/formeln','#/glossar','#/lektion/sigmoid','#/pruefung','#/fall/mangel','#/mitmachen']) {
     await navigate(route,'main h1');
     assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true,route);
   }
+  await c('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await navigate('#/lektion/sigmoid','#quiz');
+  assert.equal(await evaluate("String(getComputedStyle(document.querySelector('.disclosure'),'::details-content').transitionDuration)"),'0s');
   assert.deepEqual(errors,[]);
-  console.log('Chromium OK: Start, Quiz, Fortschritt, Labore, Rechenprüfung, Suche, Dark Mode und sieben Handyansichten.');
+  console.log('Chromium OK: Themensuche, Fortschritt, aufklappbare Erklärung, Laboreingabe, Prüfungstraining, Formelsuche, Dunkelmodus und zehn Handyansichten.');
 } finally { ws.close(); browser.kill(); }
