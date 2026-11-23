@@ -145,8 +145,8 @@ try {
 
   await c('Emulation.setDeviceMetricsOverride',{width:721,height:812,deviceScaleFactor:1,mobile:false});
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'static');
-  const tablet=await evaluate("({width:innerWidth,nav:document.querySelector('.tab-dock').getBoundingClientRect().left,brand:document.querySelector('.brand').getBoundingClientRect().right})");
-  assert.ok(tablet.nav > tablet.brand,JSON.stringify(tablet));
+  const tablet=await evaluate("({width:innerWidth,navLeft:document.querySelector('.tab-dock').getBoundingClientRect().left,navRight:document.querySelector('.tab-dock').getBoundingClientRect().right,brand:document.querySelector('.brand').getBoundingClientRect().right,theme:document.querySelector('.theme-picker').getBoundingClientRect().left})");
+  assert.ok(tablet.navLeft > tablet.brand && tablet.navRight < tablet.theme,JSON.stringify(tablet));
   await c('Emulation.setDeviceMetricsOverride',{width:720,height:812,deviceScaleFactor:1,mobile:true});
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'fixed');
   await c('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
