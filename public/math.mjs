@@ -23,3 +23,17 @@ export function distribution(values) {
 export function metrics(tp, fp, fn, tn) {
   return [ratio(tp + tn, tp + fp + fn + tn), ratio(tp, tp + fp), ratio(tp, tp + fn), ratio(2 * tp, 2 * tp + fp + fn)];
 }
+
+export function parseNumber(text) {
+  const normalized = text.trim().replace('−','-').replace(',','.');
+  if(!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalized))return null;
+  const value=Number(normalized);
+  return Number.isFinite(value)?value:null;
+}
+
+export function parseSeries(text) {
+  const lexemes=text.trim().split(/[;\s]+/);
+  if(lexemes.length<2||lexemes.length>24)return null;
+  const values=lexemes.map(parseNumber);
+  return values.some(value=>value===null||Math.abs(value)>1e6)?null:values;
+}

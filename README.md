@@ -6,8 +6,9 @@ Eine interaktive Lernapp zur Weiterbildung in KI und maschinellem Lernen. Sie f�
 
 ## Inhalt
 
-- Lernpfad für Woche 1 bis 5, Recht, Prozesse und Prüfungsvorbereitung
-- Rechenlabor, Formelsammlung und Glossar
+- Themenübersicht für KI-Grundlagen, Daten, Statistik, Regression, Modellbewertung, Bäume, kNN, Projekte, Recht und Lernpraxis
+- Aufklappbare Lektionen, Rechenlabore mit eigenen Werten, Formelsammlung und Glossar
+- Prüfungstraining mit Quellenbezug zum Kurs, zum DQR-5-Rahmenplan und zu DQR-4/5-Musteraufgaben
 - Hell- und Dunkelmodus, Bedienung per Touch und Tastatur
 - Lernfortschritt im Browser des jeweiligen Geräts
 
@@ -29,8 +30,9 @@ node --test
 
 ## Projektaufbau
 
-- `public/lessons.mjs` enthält Module, Erklärungen und Selbstchecks.
+- `public/lessons.mjs` ordnet Lektionen ihren Themen zu. `public/topic-content.mjs` enthält ergänzende Erklärungen und Selbstchecks.
 - `public/labs.mjs` verknüpft Eingaben mit Rechenwegen und Diagrammen.
+- `public/exam-content.mjs` enthält die Zuordnung zu Prüfungsquellen und eigens formulierte Übungsfälle.
 - `public/reference.mjs` enthält Formeln und Begriffe.
 - `public/math.mjs` enthält gemeinsame Rechenfunktionen.
 - `public/app.mjs` und `style.css` steuern Darstellung und Bedienung.

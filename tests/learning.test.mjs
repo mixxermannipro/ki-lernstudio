@@ -4,8 +4,9 @@ import { test } from 'node:test';
 import { labs } from '../public/labs.mjs';
 import { modules } from '../public/lessons.mjs';
 import { formulas, glossary } from '../public/reference.mjs';
-import { distribution, gini, entropy, metrics, sigmoid } from '../public/math.mjs';
+import { distribution, gini, entropy, metrics, parseSeries, sigmoid } from '../public/math.mjs';
 import { chart } from '../public/charts.mjs';
+import { examCases, examTopics } from '../public/exam-content.mjs';
 
 test('Sigmoid und Klassifikationsmetriken stimmen bei Beispielwerten und leeren Nennern', () => {
   assert.equal(sigmoid(0),0.5);
@@ -46,6 +47,15 @@ test('Weitere Rechenexperimente liefern die erwarteten Beispielwerte', () => {
 
 test('Lerninhalte haben eindeutige Ziele und alle Labore zeichnen ihre Grenzwerte', () => {
   const all=modules.flatMap(m=>m.lessons);
+  assert.equal(new Set(modules.map(m=>m.id)).size,modules.length);
+  assert.ok(modules.every(m=>!/^w\d+$/.test(m.id)&&!m.label));
+  const ids=new Set(all.map(item=>item.id));
+  for(const topic of examTopics)for(const id of topic.lessons)assert.ok(ids.has(id),id);
+  assert.equal(new Set(examCases.map(item=>item.id)).size,examCases.length);
+  for(const item of examCases){
+    assert.ok(Object.hasOwn(labs,item.lab));
+    assert.ok(item.tasks.every(task=>Number.isFinite(task.answer)&&task.explanation));
+  }
   assert.equal(new Set(all.map(l=>l.id)).size,all.length);
   assert.equal(new Set(glossary.map(([name])=>name)).size,glossary.length);
   for(const lesson of all) {
@@ -60,6 +70,22 @@ test('Lerninhalte haben eindeutige Ziele und alle Labore zeichnen ihre Grenzwert
       assert.doesNotMatch(chart(data.plot),/NaN|Infinity|undefined/,id);
     }
   }
+});
+
+test('Neue Experimente behandeln eigene Dezimalwerte und prüfen die erwarteten Ergebnisse', () => {
+  assert.deepEqual(parseSeries('−2; 0; 2,5'),[-2,0,2.5]);
+  for(const invalid of ['2', '2; undefiniert', '2; Infinity', '1; 1000001', '2;'])assert.equal(parseSeries(invalid),null);
+  assert.equal(labs.datenwerte.run(['2; 4; 6']).result,'Mittelwert 4');
+  assert.ok(labs.datenwerte.run(['kein Wert']).error);
+  assert.equal(labs.fehler.run([1,-2,3]).result,'RMSE 2,1602');
+  assert.equal(labs.entropie.run([4,0,0,4]).result,'IG: 1 Bit');
+  assert.equal(labs.neuron.run([2,-1,.5,2,.5]).result,'ReLU = 0');
+  assert.ok(labs.grenze.run([0,0,0,2,3]).note.includes('null'));
+  assert.equal(labs.schwellenwert.run([50]).result,'Recall 60 %');
+  assert.equal(labs.iris.run([3,2]).result,'Accuracy 96,6667 %');
+  const first=labs.batch.run([.1,1]).plot.values;
+  assert.ok(first[1]<first[0]);
+  assert.equal(labs.batch.run([0,3]).plot.values[3],first[0]);
 });
 
 test('Die statische Startseite verweist auf vorhandene Dateien', async () => {
