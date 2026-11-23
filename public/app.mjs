@@ -31,7 +31,7 @@ const titles = {home:'Themen',pruefung:'Prüfungstraining',labor:'Rechenlabor',f
 function theme() {
   const dark=state.theme==='dark'||state.theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.dataset.theme=dark?'dark':'light';
-  document.querySelector('[name="theme-color"]').content=dark?'#141416':'#f7f7f9';
+  document.querySelector('[name="theme-color"]').content=dark?'#000000':'#f7f7f9';
   const icons={
     system:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',

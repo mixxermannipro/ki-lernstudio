@@ -145,8 +145,12 @@ try {
   await navigate('#/labor/knn','#lab-0');
   await evaluate("document.querySelector('.theme').click();document.querySelector('[data-theme-choice=dark]').click()");
   assert.equal(await evaluate("document.documentElement.dataset.theme"),'dark');
-  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()"),'#141416');
+  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()"),'#000');
   assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true);
+  assert.equal(await evaluate("getComputedStyle(document.body).backgroundColor"),'rgb(0, 0, 0)');
+  assert.equal(await evaluate("document.querySelector('.tab-dock [aria-current]').dataset.nav"),'labor');
+  const dock="document.querySelector('.tab-dock').getBoundingClientRect()";
+  assert.equal(await evaluate(dock+".bottom <= innerHeight && "+dock+".top > innerHeight - 100"),true);
   if(output){
     await evaluate("document.querySelector('main').focus({preventScroll:true}); window.scrollTo(0,0)");
     await documentFrame();
@@ -156,6 +160,8 @@ try {
     await navigate(route,'main h1');
     assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true,route);
   }
+  await evaluate("window.scrollTo(0,document.documentElement.scrollHeight)");
+  assert.equal(await evaluate("document.querySelector('footer').getBoundingClientRect().bottom < document.querySelector('.tab-dock').getBoundingClientRect().top"),true);
   assert.equal(await evaluate("document.querySelector('footer a[href*=github]').href"),'https://github.com/mixxermannipro/ki-lernstudio');
   assert.equal(await evaluate("document.querySelector('main a[href*=CONTRIBUTING]').pathname"),'/mixxermannipro/ki-lernstudio/blob/main/CONTRIBUTING.md');
   await c('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
