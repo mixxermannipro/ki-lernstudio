@@ -58,6 +58,9 @@ try {
   await c('Page.enable');await c('Runtime.enable');
   await c('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await navigate('','#topics-search');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'static');
+  assert.equal(await evaluate("document.querySelector('.tab-dock').getBoundingClientRect().top < 60"),true);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock svg')).display"),'none');
   if(output){
     await evaluate("document.fonts.ready.then(()=>true)");
     await writeFile(output+'-desktop.png',Buffer.from((await c('Page.captureScreenshot',{format:'png'})).data,'base64'));
@@ -140,6 +143,12 @@ try {
   await evaluate("(()=>{const s=document.querySelector('#search');s.value='overfitting';s.dispatchEvent(new Event('input'))})()");
   assert.equal(await evaluate("document.querySelector('#matches').innerText"),'1 Eintrag');
 
+  await c('Emulation.setDeviceMetricsOverride',{width:721,height:812,deviceScaleFactor:1,mobile:false});
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'static');
+  const tablet=await evaluate("({width:innerWidth,nav:document.querySelector('.tab-dock').getBoundingClientRect().left,brand:document.querySelector('.brand').getBoundingClientRect().right})");
+  assert.ok(tablet.nav > tablet.brand,JSON.stringify(tablet));
+  await c('Emulation.setDeviceMetricsOverride',{width:720,height:812,deviceScaleFactor:1,mobile:true});
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.tab-dock')).position"),'fixed');
   await c('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await c('Emulation.setTouchEmulationEnabled',{enabled:true});
   await navigate('#/labor/knn','#lab-0');
