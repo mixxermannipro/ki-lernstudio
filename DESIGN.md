@@ -1,9 +1,9 @@
-# Gestaltung
+# Gestaltung des KI-Lernstudios
 
-Ein ruhiges digitales Lehrbuch. Große Überschriften, viel Weißraum, klare Linien und ein kühler, heller Hintergrund im Hellmodus. Ein dunkles Tintenblau trägt Diagramme und Lernlabor. Koralle hebt die aktuell veränderte Größe hervor. Desktop und Handy nutzen dieselbe Reihenfolge und dieselben Aufgaben.
+Das Lernstudio ist als digitales Arbeitsheft aufgebaut. Die Startseite zeigt am Desktop ein festes Inhaltsverzeichnis neben dem Lernstoff. Am Handy haben der Wiedereinstieg in eine Lektion und die Suche Vorrang. Kapitelnummern dienen der Orientierung in der Themenfolge.
 
-Die Startseite verbindet den Lernpfad mit einem bedienbaren Sigmoid-Diagramm. Im Rechenlabor bleibt der Rechenweg sichtbar, wenn sich der Eingabewert ändert. Bedienung ist per Touch und Tastatur möglich. Reduzierte Bewegung folgt der Systemeinstellung.
+Literata prägt Überschriften und markierte Ergebnisse. Eine Systemschrift bleibt für Aufgaben, Navigation und Eingaben zuständig. Tannengrün verbindet Inhaltsverzeichnis und Bedienelemente. Ein warmer Rotton hebt ausgewählte Punkte und Ergebnisse in Diagrammen hervor. Die Navigation liegt auf einer leicht durchscheinenden Fläche. Lesetexte und interaktive Inhalte liegen auf deckenden Flächen mit sparsamen Trennlinien.
 
-Die schwebende Navigation verwendet dezentes Glas, damit die Seite darunter beim Scrollen erkennbar bleibt. Lektionen, Formeln und Fälle liegen auf ruhigen, deckenden Flächen. Beim Öffnen einer Erklärung wird der Inhalt unmittelbar sichtbar und der Platz dafür fließend freigegeben. Das Ergebnis steht auf dem Handy oberhalb der Regler.
+Im Labor lassen sich Werte ziehen oder eingeben. Kontext, Diagramm und Bedienelemente stehen zusammen. Aufklappbare Rechenschritte verwenden nach Möglichkeit den Namen der Operation. Die Prüfungsseite zeigt zuerst die bearbeitbaren Fälle und daneben den Quellenbezug. Fokusmarkierungen, Hell- und Dunkelmodus und reduzierte Bewegung gehören zu allen Ansichten.
 
-Die Themenübersicht ordnet nach Fachgebiet. Suchtreffer öffnen die passenden Themen. Prüfungsbezüge und Rechenfälle liegen in einer eigenen Ansicht.
+Die lokal eingebundene Schrift liegt in `public/fonts/`. Ihre SIL Open Font License ist dort mit abgelegt.

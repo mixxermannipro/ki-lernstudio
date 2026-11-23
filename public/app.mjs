@@ -1,13 +1,13 @@
 import { modules } from './lessons.mjs';
 import { labs } from './labs.mjs';
-import { chart } from './charts.mjs';
 import { formulas, glossary } from './reference.mjs';
-import { fmt } from './math.mjs';
 import { examCases, examTopics } from './exam-content.mjs';
 import { bindCase, bindLab, casePage, chevron, disclosure, examPage, feedback, labWorkspace, link } from './study-ui.mjs';
 
 const root = document.querySelector('main');
-const button = document.querySelector('.theme');
+const themePicker=document.querySelector('.theme-picker');
+const themeSummary=themePicker.querySelector('summary');
+const themeOptions=[...themePicker.querySelectorAll('[data-theme-choice]')];
 const lessons = modules.flatMap(module=>module.lessons.map(lesson=>({...lesson,module})));
 const lessonById=new Map(lessons.map(lesson=>[lesson.id,lesson]));
 const examByLesson=new Map(examTopics.flatMap(topic=>topic.lessons.map(id=>[id,topic])));
@@ -16,8 +16,8 @@ const storeKey = 'ki-lernstudio:v1';
 const read = () => {
   try {
     const data = JSON.parse(localStorage.getItem(storeKey));
-    return { done:Array.isArray(data?.done)?data.done:[], theme:['light','dark'].includes(data?.theme)?data.theme:'system' };
-  } catch { return {done:[],theme:'system'}; }
+    return { done:Array.isArray(data?.done)?data.done:[], theme:['light','dark'].includes(data?.theme)?data.theme:'system', last:lessonById.has(data?.last)?data.last:null };
+  } catch { return {done:[],theme:'system',last:null}; }
 };
 const state=read();
 function save() {
@@ -27,49 +27,75 @@ const status = id => state.done.includes(id);
 const titles = {home:'Themen',pruefung:'Prüfungstraining',labor:'Rechenlabor',formeln:'Formelsammlung',glossar:'Glossar',mitmachen:'Mitmachen'};
 
 function theme() {
-  const dark = state.theme==='dark'||state.theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark=state.theme==='dark'||state.theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.dataset.theme=dark?'dark':'light';
-  document.querySelector('[name="theme-color"]').content=dark?'#141722':'#f5f6fa';
-  const icons = {
+  document.querySelector('[name="theme-color"]').content=dark?'#17211e':'#f4f5ee';
+  const icons={
     system:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
     dark:'<path d="M21 13.2A9 9 0 0 1 10.8 3a9 9 0 1 0 10.2 10.2Z"/>'
   };
   const labels={system:'System',light:'Hell',dark:'Dunkel'};
-  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">'+icons[state.theme]+'</svg><span>'+labels[state.theme]+'</span>';
-  button.setAttribute('aria-label','Farbschema: '+labels[state.theme]+'. Farbschema wechseln');
+  themeSummary.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">'+icons[state.theme]+'</svg><span>'+labels[state.theme]+'</span>';
+  themeSummary.setAttribute('aria-label','Darstellung wählen. Aktuell: '+labels[state.theme]);
+  themeOptions.forEach(option=>option.setAttribute('aria-pressed',String(option.dataset.themeChoice===state.theme)));
 }
-button.addEventListener('click',()=>{
-  state.theme={system:'light',light:'dark',dark:'system'}[state.theme];
+themeOptions.forEach(option=>option.addEventListener('click',()=>{
+  state.theme=option.dataset.themeChoice;
   save();
   theme();
+  themePicker.open=false;
+  themeSummary.focus();
+}));
+document.addEventListener('click',event=>{
+  if(!themePicker.contains(event.target))themePicker.open=false;
+});
+themePicker.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){
+    themePicker.open=false;
+    themeSummary.focus();
+  }
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme);
 
+const chapterNames=['KI-Grundlagen','Daten','Statistik','Regression','Modellbewertung','Entscheidungsbäume','kNN & Skalierung','Prozesse & Projekte','Recht & Steuern','Lernmethoden'];
+const chapterNumber=index=>String(index+1).padStart(2,'0');
+let directoryQuery='';
+const topicState=new Map();
+
 function home() {
-  const count=lessons.filter(l=>status(l.id)).length;
-  const next=lessons.find(l=>!status(l.id))??lessons[0];
-  return '<section class="hero"><div class="hero-copy"><h1>KI verstehen.<br>Selbst rechnen.</h1><p>Lerne künstliche Intelligenz und maschinelles Lernen nach Themen. Klappe Erklärungen auf, probiere eigene Werte aus und übe für die Prüfung.</p>'+
-    '<div class="actions"><button class="primary" type="button" data-jump="themen">Themen entdecken</button>'+link('pruefung','Prüfungstraining','secondary')+'</div></div>'+
-    '<div class="hero-demo" aria-label="Interaktive Sigmoid-Vorschau"><div class="demo-top"><span>Sigmoid</span><strong id="preview-value">58,66 %</strong></div><div id="preview-chart"></div>'+
-    '<label class="range-label" for="preview-z"><span>Rohwert z</span><output id="preview-z-value" for="preview-z">0,35</output></label><input id="preview-z" type="range" min="-6" max="6" step="0.05" value="0.35"></div></section>'+
-    '<section class="learning" id="themen" tabindex="-1"><div class="section-title"><div><h2>Themenübersicht</h2><p>Starte dort, wo du weiterlernen möchtest.</p></div>'+
-    '<div class="progress-summary"><span>'+count+' von '+lessons.length+' erledigt</span><progress value="'+count+'" max="'+lessons.length+'">'+count+'</progress></div></div>'+
-    '<div class="directory-tools"><div><label class="search-label" for="topics-search">Thema suchen</label><input type="search" class="search" id="topics-search" placeholder="z. B. Gini, Skalierung oder Verträge"></div>'+
-    link('lektion/'+next.id,count===0?'Erste Lektion':count===lessons.length?'Lektionen wiederholen':'Weiterlernen','secondary')+'</div>'+
+  const count=lessons.filter(lesson=>status(lesson.id)).length;
+  const recent=lessonById.get(state.last);
+  const next=recent&&!status(recent.id)?recent:lessons.find(lesson=>!status(lesson.id))??lessons[0];
+  const caption=recent===next?'Zuletzt geöffnet':count===lessons.length?'Zum Wiederholen':'Nächste Lektion';
+  return '<div class="desk"><aside class="chapter-index" aria-labelledby="chapter-title"><h2 id="chapter-title">Inhalt</h2><ol>'+
+    modules.map((module,i)=>'<li><button type="button" data-topic-jump="'+module.id+'"><span>'+chapterNumber(i)+'</span>'+chapterNames[i]+'</button></li>').join('')+
+    '</ol><div class="index-progress"><span>'+count+' von '+lessons.length+' Lektionen abgeschlossen</span><progress value="'+count+'" max="'+lessons.length+'">'+count+'</progress></div></aside>'+
+    '<div class="desk-page"><section class="desk-intro"><h1>Dein Arbeitsheft.</h1><p>Künstliche Intelligenz und maschinelles Lernen für die Weiterbildung. Steig bei einem Thema ein oder rechne einen Prüfungsfall.</p></section>'+
+    '<section class="resume" aria-label="Lernstand"><div><p>'+caption+'</p><h2>'+next.title+'</h2></div>'+
+    link('lektion/'+next.id,recent===next?'Weiterlesen':count===0?'Lektion starten':'Lektion öffnen','primary')+'</section>'+
+    '<section class="learning" id="themen" tabindex="-1"><div class="section-title"><div><h2>Themen</h2><p class="mobile-progress">'+count+' von '+lessons.length+' Lektionen abgeschlossen</p></div>'+link('pruefung','Prüfungsfälle','back')+'</div>'+
+    '<div class="directory-tools"><label class="search-label" for="topics-search">Im Lernstoff suchen</label><input type="search" class="search" id="topics-search" placeholder="Gini, Skalierung, Verträge …"></div>'+
     '<p id="topic-matches" class="matches" role="status" hidden></p>'+
-    '<div class="module-list">'+modules.map(module=>'<details class="module" data-topic '+(module.id===next.module.id?'open':'')+'><summary><span class="module-main"><strong>'+module.title+'</strong><span>'+module.summary+'</span></span><span class="module-count">'+module.lessons.filter(l=>status(l.id)).length+'/'+module.lessons.length+'</span>'+chevron+'</summary>'+
-    '<ul>'+module.lessons.map(l=>'<li data-lesson="'+l.id+'">'+link('lektion/'+l.id,l.title)+'<span>'+(status(l.id)?'Erledigt':l.lab?'Rechenlabor':'')+'</span></li>').join('')+'</ul></details>').join('')+'</div></section>';
+    '<div class="module-list">'+modules.map((module,i)=>{
+      const completed=module.lessons.filter(lesson=>status(lesson.id)).length;
+      return '<details id="thema-'+module.id+'" class="module" data-topic '+((topicState.get(module.id)??module.id===next.module.id)?'open':'')+'>'+
+        '<summary><span class="chapter-number" aria-hidden="true">'+chapterNumber(i)+'</span><span class="module-main"><strong>'+module.title+'</strong><span>'+module.summary+'</span></span>'+
+        '<span class="module-count">'+(completed?completed+'/'+module.lessons.length+' erledigt':module.lessons.length+' Lektionen')+'</span>'+chevron+'</summary>'+
+        '<ul>'+module.lessons.map(lesson=>'<li data-lesson="'+lesson.id+'">'+link('lektion/'+lesson.id,lesson.title)+(status(lesson.id)?'<span>Erledigt</span>':lesson.lab?'<span>Mit Labor</span>':'')+'</li>').join('')+'</ul></details>';
+    }).join('')+'</div></section></div></div>';
 }
 
 function lessonPage(lesson) {
   const q=lesson.quiz;
   const next=lesson.module.lessons[lesson.module.lessons.findIndex(item=>item.id===lesson.id)+1];
   const exam=examByLesson.get(lesson.id);
-  return '<article class="reading study-page">'+link('', 'Themenübersicht','back')+
+  const location=lesson.module.lessons.findIndex(item=>item.id===lesson.id)+1;
+  return '<article class="reading study-page"><div class="breadcrumb">'+link('', 'Themen','back')+'<span>'+lesson.module.title+'</span></div>'+
+    '<div class="lesson-position">Lektion '+location+' von '+lesson.module.lessons.length+'</div>'+
     '<h1>'+lesson.title+'</h1><p class="intro">'+lesson.intro+'</p><div class="lesson-tools">'+
     (lesson.lab?'<button class="secondary" type="button" data-jump="experiment-title">Zum Rechenbeispiel</button>':'')+
-    '<button class="secondary" type="button" id="toggle-explanations" aria-controls="lesson-explanations" aria-expanded="false">Alle Erklärungen öffnen</button></div>'+
+    '<button class="text-button" type="button" id="toggle-explanations" aria-controls="lesson-explanations" aria-expanded="false">Alle Erklärungen öffnen</button></div>'+
     '<section aria-labelledby="explanation-title"><h2 id="explanation-title" class="lesson-section-title">Einfach erklärt</h2><ol class="lesson-steps" id="lesson-explanations">'+
     lesson.steps.map(([name,body],i)=>'<li>'+disclosure(name,'<p>'+body+'</p>',i===0)+'</li>').join('')+'</ol></section>'+
     (lesson.lab?labWorkspace(lesson.lab,true):'')+
@@ -82,9 +108,17 @@ function lessonPage(lesson) {
     (next?link('lektion/'+next.id,'Nächste Lektion','secondary'):link('','Zur Themenübersicht','secondary'))+'</div></article>';
 }
 
+const labGroups=[
+  ['Daten & Statistik',['datenwerte','boxplot','korrelation','scaler']],
+  ['Regression & Training',['gerade','grenze','sigmoid','fehler','gradient','batch','neuron']],
+  ['Modelle & Bewertung',['baum','gini','entropie','pruning','knn','matrix','iris','schwellenwert','folds']],
+  ['Recht & Prozesse',['steuer','prozess','quote']]
+];
+
 function labPage(key) {
-  return '<section><h1>Rechenlabor</h1><p class="intro">Ändere die Werte und öffne die Rechenschritte einzeln. Prüfe danach, ob du ein Beispiel selbst lösen kannst.</p>'+
-    '<label class="lab-select">Experiment <select id="lab-select">'+Object.entries(labs).map(([id,item])=>'<option value="'+id+'" '+(id===key?'selected':'')+'>'+item.title+'</option>').join('')+'</select></label>'+
+  return '<section class="lab-page"><div class="lab-header"><div><h1>Rechenlabor</h1><p class="intro">Wähle ein Experiment. Zieh am Regler oder gib einen Wert ein.</p></div>'+
+    '<label class="lab-select">Experiment <select id="lab-select">'+labGroups.map(([group,ids])=>'<optgroup label="'+group+'">'+ids.map(id=>
+      '<option value="'+id+'" '+(id===key?'selected':'')+'>'+labs[id].title+'</option>').join('')+'</optgroup>').join('')+'</select></label></div>'+
     labWorkspace(key)+'</section>';
 }
 
@@ -101,6 +135,12 @@ function referencePage(type) {
 function normalize(value) {
   return value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLocaleLowerCase('de');
 }
+function focusSection(target) {
+  target.setAttribute('tabindex','-1');
+  target.focus({preventScroll:true});
+  target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+}
+
 function bindTopicSearch() {
   const search=document.querySelector('#topics-search');
   const result=document.querySelector('#topic-matches');
@@ -108,49 +148,52 @@ function bindTopicSearch() {
     node, topic:modules[i], rows:[...node.querySelectorAll('[data-lesson]')], open:node.open
   }));
   let filtering=false;
-  search.addEventListener('input',()=>{
-    const value=normalize(search.value.trim());
-    const terms=value.split(/\s+/);
+  function filter() {
+    directoryQuery=search.value;
+    const query=normalize(search.value.trim());
+    const terms=query.split(/\s+/);
     let count=0;
     for(const {node,topic,rows,open} of entries) {
       const category=normalize(topic.title+' '+topic.summary);
       rows.forEach((row,i)=>{
         const lesson=topic.lessons[i];
-        const haystack=normalize(category+' '+lesson.title+' '+lesson.intro+' '+lesson.steps.map(step=>step[0]).join(' '));
-        row.hidden=Boolean(value)&&!terms.every(term=>haystack.includes(term));
+        const haystack=normalize(category+' '+lesson.title+' '+lesson.intro+' '+lesson.steps.flat().join(' '));
+        row.hidden=Boolean(query)&&!terms.every(term=>haystack.includes(term));
       });
       const visible=rows.filter(row=>!row.hidden).length;
       count+=visible;
       node.hidden=visible===0;
-      if(value)node.open=visible>0;
-      else if(filtering)node.open=open;
+      if(query)node.open=visible>0;
+      else if(filtering)node.open=topicState.get(topic.id)??open;
     }
-    filtering=Boolean(value);
+    filtering=Boolean(query);
     result.hidden=!filtering;
-    result.textContent=count===0?'Keine passenden Lektionen gefunden.':count===1?'1 passende Lektion':count+' passende Lektionen';
+    result.textContent=count===0?'Keine Lektionen gefunden. Prüfe den Suchbegriff.':count===1?'1 passende Lektion':count+' passende Lektionen';
+  }
+  search.value=directoryQuery;
+  filter();
+  search.addEventListener('input',filter);
+  for(const {node,topic} of entries)node.querySelector('summary').addEventListener('click',()=>{
+    if(filtering)return;
+    topicState.set(topic.id,!node.open);
   });
+  root.querySelectorAll('[data-topic-jump]').forEach(button=>button.addEventListener('click',()=>{
+    search.value='';
+    filter();
+    const topic=document.getElementById('thema-'+button.dataset.topicJump);
+    topic.open=true;
+    topicState.set(button.dataset.topicJump,true);
+    focusSection(topic.querySelector('summary'));
+  }));
 }
 
 function wire(type,lesson,key,examCase) {
   document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener('click',()=>{
-    const target=document.getElementById(button.dataset.jump);
-    target.setAttribute('tabindex','-1');
-    target.focus({preventScroll:true});
-    target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+    focusSection(document.getElementById(button.dataset.jump));
   }));
-  if(type==='home') {
-    const slider=document.querySelector('#preview-z');
-    function preview() {
-      const z=Number(slider.value), data=labs.sigmoid.run([z,50]);
-      document.querySelector('#preview-z-value').value=fmt(z);
-      document.querySelector('#preview-value').textContent=data.result;
-      document.querySelector('#preview-chart').innerHTML=chart(data.plot);
-    }
-    slider.addEventListener('input',preview);
-    preview();
-    bindTopicSearch();
-  }
+  if(type==='home')bindTopicSearch();
   if(type==='lektion') {
+    if(state.last!==lesson.id){state.last=lesson.id;save();}
     const form=document.querySelector('#quiz'), done=document.querySelector('#done');
     form.addEventListener('submit',event=>{
       event.preventDefault();
@@ -209,11 +252,11 @@ function render(moveFocus=false) {
   const isLab=type==='labor'&&(!id||Object.hasOwn(labs,id));
   const body=type==='home'?home():type==='lektion'&&lesson?lessonPage(lesson):isLab?labPage(key):
     type==='formeln'||type==='glossar'?referencePage(type):type==='pruefung'?examPage(lessonById):type==='fall'&&examCase?casePage(examCase):type==='mitmachen'?
-    '<section class="reading"><h1>Mitmachen</h1><p class="intro">Habt ihr einen leichteren Rechenweg, eine zusätzliche Übung oder einen Fehler entdeckt? Teilt euren Vorschlag im öffentlichen GitHub-Projekt.</p><div class="actions"><a class="primary" href="'+repo+'/issues/new">Vorschlag melden</a><a class="secondary" href="'+repo+'">Änderungen beitragen</a></div></section>':
+    '<section class="reading"><h1>Mitmachen</h1><p class="intro">Habt ihr einen leichteren Rechenweg, eine zusätzliche Übung oder einen Fehler entdeckt? Teilt euren Vorschlag im öffentlichen GitHub-Projekt.</p><div class="actions"><a class="primary" href="'+repo+'">Repository auf GitHub</a><a class="secondary" href="'+repo+'/blob/main/CONTRIBUTING.md">Beitragsanleitung</a><a class="secondary" href="'+repo+'/issues/new">Fehler oder Idee melden</a></div></section>':
     '<section class="reading"><h1>Seite nicht gefunden</h1>'+link('','Zum Lernpfad','primary')+'</section>';
   const labSelectFocused=document.activeElement?.id==='lab-select';
   root.innerHTML=body;
-  if(moveFocus&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
+  if(moveFocus&&typeof root.animate==='function'&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
     root.animate([{opacity:.75,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:210,easing:'cubic-bezier(.16,1,.3,1)'});
   document.title=type==='home'?'KI-Lernstudio':(lesson?.title??examCase?.title??titles[type]??'Seite nicht gefunden')+' · KI-Lernstudio';
   document.querySelectorAll('[data-nav]').forEach(nav=>{

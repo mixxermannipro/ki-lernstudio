@@ -24,17 +24,19 @@ function labInput(field,i) {
   const id='lab-'+i;
   if(field.options)return '<label class="lab-field" for="'+id+'">'+field.label+'<select id="'+id+'" data-lab-input>'+field.options.map((option,n)=>'<option value="'+n+'">'+option+'</option>').join('')+'</select></label>';
   if(field.text)return '<div class="lab-field"><label for="'+id+'">'+field.label+'</label><input type="text" data-lab-input id="'+id+'" value="'+field.value+'" maxlength="320" aria-describedby="'+id+'-hint"><p id="'+id+'-hint" class="field-hint">'+field.hint+'</p></div>';
-  return '<div class="lab-field"><label class="range-label" for="'+id+'"><span>'+field.label+'</span><output for="'+id+'" id="value-'+i+'">'+fmt(field.value)+'</output></label><input data-lab-input id="'+id+'" type="range" min="'+field.min+'" max="'+field.max+'" step="'+field.step+'" value="'+field.value+'"></div>';
+  return '<div class="lab-field"><div class="range-label"><label for="'+id+'">'+field.label+'</label>'+
+    '<input class="exact-value" type="text" inputmode="decimal" aria-label="'+field.label+', Wert eingeben" aria-describedby="'+id+'-message" maxlength="16" value="'+fmt(field.value)+'"></div>'+
+    '<input data-lab-input id="'+id+'" type="range" min="'+field.min+'" max="'+field.max+'" step="'+field.step+'" value="'+field.value+'">'+
+    '<p class="field-message" id="'+id+'-message" role="status" hidden></p></div>';
 }
 
 export function labWorkspace(key, inline=false) {
   const lab=labs[key];
   return '<section class="lab-workspace'+(inline?' inline-lab':'')+'" aria-labelledby="experiment-title">'+
-    (inline?'<h2 id="experiment-title">Interaktiv rechnen</h2>':'')+
-    '<div class="lab-layout"><div class="lab-controls"><'+(inline?'h3':'h2 id="experiment-title"')+'>'+lab.title+'</'+(inline?'h3':'h2')+'><p>'+lab.question+'</p><p class="formula">'+lab.formula+'</p>'+
-    lab.inputs.map(labInput).join('')+
-    '<button id="reset" class="secondary" type="button">Werte zurücksetzen</button></div>'+
-    '<div class="lab-result"><div class="result-top"><h3>Ergebnis</h3><output id="result" aria-live="polite"></output></div><div id="plot"></div><p id="note"></p></div></div>'+
+    '<div class="experiment-heading"><div><h2 id="experiment-title">'+lab.title+'</h2><p>'+lab.question+'</p></div><p class="formula">'+lab.formula+'</p></div>'+
+    '<div class="lab-layout"><div class="lab-result"><div class="result-top"><h3>Ergebnis</h3><output id="result" aria-live="polite"></output></div><div id="plot"></div><p id="note"></p></div>'+
+    '<div class="lab-controls"><div class="controls-heading"><h3>Werte</h3><button id="reset" class="text-button" type="button">Zurücksetzen</button></div>'+
+    lab.inputs.map(labInput).join('')+'</div></div>'+
     '<div class="lab-work"><section><h3>Rechenweg</h3><ol id="calculation" class="calculation"></ol></section><section class="quiz"><h3>Selbst rechnen</h3><form id="numeric"><label for="answer">'+lab.exercise[0]+'</label><div class="answer-row"><input type="text" inputmode="decimal" id="answer" placeholder="z. B. 0,5" required><button class="primary">Prüfen</button></div><p class="feedback" id="answer-feedback" role="status"></p></form>'+
     disclosure('Lösungsweg anzeigen','<p>'+lab.exercise[2]+'</p>')+'</section></div></section>';
 }
@@ -44,22 +46,58 @@ export function bindLab(key) {
   const plot=document.querySelector('#plot'), note=document.querySelector('#note');
   const result=document.querySelector('#result'), calculation=document.querySelector('#calculation');
   function update() {
-    const values=fields.map((field,i)=>{
-      if(lab.inputs[i].text)return field.value;
-      const number=Number(field.value), label=document.querySelector('#value-'+i);
-      if(label)label.value=fmt(number);
-      return number;
-    });
+    const values=fields.map((field,i)=>lab.inputs[i].text?field.value:Number(field.value));
     const data=lab.run(values);
     result.value=data.result??'Eingabe prüfen';
     note.textContent=data.error??data.note;
     plot.innerHTML=data.error?'':chart(data.plot);
     const opened=[...calculation.querySelectorAll('details')].map(node=>node.open);
-    calculation.innerHTML=(data.steps??[]).map((step,i)=>'<li>'+disclosure('Schritt '+(i+1),'<p>'+step+'</p>',opened[i]??i===0)+'</li>').join('');
+    calculation.innerHTML=(data.steps??[]).map((step,i)=>{
+      const separator=step.indexOf(':');
+      const title=separator>2&&separator<46?step.slice(0,separator):'Schritt '+(i+1);
+      const body=title.startsWith('Schritt ')?step:step.slice(separator+1).trim();
+      return '<li>'+disclosure(title,'<p>'+body+'</p>',opened[i]??i===0)+'</li>';
+    }).join('');
   }
-  fields.forEach(field=>field.addEventListener('input',update));
+  const editors=fields.map(field=>{
+    if(field.type!=='range'){
+      field.addEventListener('input',update);
+      return null;
+    }
+    const text=field.closest('.lab-field').querySelector('.exact-value');
+    const message=document.getElementById(field.id+'-message');
+    function sync() {
+      text.value=fmt(Number(field.value));
+      text.removeAttribute('aria-invalid');
+      message.hidden=true;
+    }
+    field.addEventListener('input',()=>{sync();update();});
+    function commit() {
+      const value=parseNumber(text.value);
+      const min=Number(field.min), max=Number(field.max), step=Number(field.step);
+      const steps=(value-min)/step;
+      if(value===null||value<min||value>max||Math.abs(steps-Math.round(steps))>1e-7){
+        text.setAttribute('aria-invalid','true');
+        message.textContent='Erlaubt sind '+fmt(min)+' bis '+fmt(max)+' in Schritten von '+fmt(step)+'.';
+        message.hidden=false;
+        return;
+      }
+      field.value=String(value);
+      sync();
+      update();
+    }
+    text.addEventListener('change',commit);
+    text.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){event.preventDefault();commit();}
+      if(event.key==='Escape'){event.preventDefault();sync();}
+    });
+    return sync;
+  });
   document.querySelector('#reset').addEventListener('click',()=>{
-    fields.forEach((field,i)=>field.value=lab.inputs[i].value);
+    fields.forEach((field,i)=>{
+      field.value=lab.inputs[i].value;
+      editors[i]?.();
+    });
     update();
   });
   document.querySelector('#numeric').addEventListener('submit',event=>{
@@ -76,14 +114,13 @@ export function bindLab(key) {
 
 export function examPage(lessonById) {
   return '<section class="reading exam-page"><h1>Prüfungstraining</h1>'+
-    '<p class="intro">Übe mit Aufgaben, die sich an deinen Kursunterlagen, dem DQR-5-Rahmenplan und den Musteraufgaben orientieren.</p>'+
-    '<p class="exam-note">Die Quellen zeigen, was du üben kannst. Welche Aufgaben in deiner Prüfung gestellt werden, steht damit nicht fest. DQR-4-Beispiele eignen sich als Einstieg in die Grundrechnungen.</p>'+
-    '<div class="actions">'+link('fall/'+examCases[0].id,'Ersten Fall lösen','primary')+'<button class="secondary" type="button" data-jump="exam-topics">Themen ansehen</button></div>'+
-    '<section class="exam-section" id="exam-topics" tabindex="-1"><h2>Was soll ich können?</h2>'+
-    examTopics.map(topic=>disclosure(topic.name,'<p class="source-label">'+topic.evidence+'</p><p>'+topic.action+'</p><ul class="topic-links">'+
-      topic.lessons.map(id=>'<li>'+link('lektion/'+id,lessonById.get(id).title)+'</li>').join('')+'</ul>')).join('')+'</section>'+
-    '<section class="exam-section"><h2>Prüfungsnahe Rechenfälle</h2><p>Bearbeite jede Teilfrage. Hinweise und Musterwege kannst du einzeln öffnen.</p><ul class="case-list">'+
+    '<p class="intro">Rechne einen Fall durch oder sieh nach, welche Themen der Rahmenplan und die Musteraufgaben abdecken.</p>'+
+    '<div class="exam-layout"><section aria-labelledby="case-list-title"><h2 id="case-list-title">Rechenfälle</h2><ul class="case-list">'+
     examCases.map(item=>'<li>'+link('fall/'+item.id,item.title)+'<span>'+item.tasks.length+' Teilfragen</span></li>').join('')+'</ul></section>'+
+    '<aside class="exam-guide" aria-labelledby="exam-topics"><h2 id="exam-topics">Was soll ich können?</h2>'+
+    examTopics.map(topic=>disclosure(topic.name,'<p class="source-label">'+topic.evidence+'</p><p>'+topic.action+'</p><ul class="topic-links">'+
+      topic.lessons.map(id=>'<li>'+link('lektion/'+id,lessonById.get(id).title)+'</li>').join('')+'</ul>')).join('')+
+    disclosure('Wie sind die Themen eingeordnet?','<p>Die Quellen zeigen, was du üben kannst. Welche Aufgaben in deiner Prüfung gestellt werden, steht damit nicht fest. DQR-4-Beispiele eignen sich als Einstieg in die Grundrechnungen.</p>')+'</aside></div>'+
     '<section class="exam-section"><h2>Weitere Themen aus den DQR-5-Mustern</h2><p>Diese Vertiefungen stammen aus dem Prüfungsmaterial. Der bisherige Unterricht ist für sie in den gelesenen Mitschriften nicht vollständig belegt.</p>'+
     examOutlook.map(([title,source,text])=>disclosure(title,'<p class="source-label">DQR-5 '+source+'</p><p>'+text+'</p>')).join('')+'</section></section>';
 }
