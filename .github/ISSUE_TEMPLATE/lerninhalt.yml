@@ -1,0 +1,17 @@
+name: Lerninhalt vorschlagen
+description: Eine Korrektur, ein Beispiel oder ein neues Thema melden
+title: "[Lerninhalt] "
+body:
+  - type: input
+    id: topic
+    attributes:
+      label: Thema oder betroffene Lektion
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Vorschlag
+      description: Bei Rechnungen gern Eingaben, Lösungsweg und Ergebnis angeben.
+    validations:
+      required: true
