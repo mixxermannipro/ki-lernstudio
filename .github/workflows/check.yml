@@ -1,0 +1,44 @@
+name: Prüfung
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lernapp-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lernapp-checks:
+    name: Lernapp-Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+      - name: JavaScript und Git-Diff prüfen
+        run: |
+          for file in public/*.mjs scripts/*.mjs; do node --check "$file"; done
+          git diff --check HEAD^ HEAD
+      - name: Rechenwege und Lerninhalte prüfen
+        run: node --test
+      - name: Desktop- und Handybedienung prüfen
+        run: |
+          python3 -m http.server 8267 --bind 127.0.0.1 --directory public &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..25}; do
+            if curl -fsS http://127.0.0.1:8267/ >/dev/null; then break; fi
+            sleep 0.2
+          done
+          node scripts/browser-smoke.mjs
